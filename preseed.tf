@@ -64,26 +64,6 @@ locals {
   # Architecture to preseed. k3d nodes run the host arch (arm64 on Apple
   # Silicon, amd64 on Intel). Override via TF_VAR if needed.
   preseed_platform = "linux/${coalesce(var.preseed_arch, "arm64")}"
-
-  preseed_script = <<-BASH
-    set -euo pipefail
-    CLUSTER="$1"
-    shift
-    NODE="k3d-$${CLUSTER}-server-0"
-    PLATFORM="${local.preseed_platform}"
-    for img in "$@"; do
-      echo "[$${CLUSTER}] pulling $$img ($$PLATFORM)..."
-      docker pull --platform "$$PLATFORM" "$$img"
-      TAR="$$(mktemp -t k3d-preseed-XXXXXX.tar)"
-      trap 'rm -f "$$TAR"' EXIT
-      docker save --platform "$$PLATFORM" "$$img" -o "$$TAR"
-      docker cp "$$TAR" "$$NODE:/tmp/preseed.tar"
-      docker exec "$$NODE" ctr -n k8s.io image import /tmp/preseed.tar
-      docker exec "$$NODE" rm -f /tmp/preseed.tar
-      rm -f "$$TAR"
-      trap - EXIT
-    done
-  BASH
 }
 
 resource "null_resource" "preseed_transit" {
@@ -93,7 +73,22 @@ resource "null_resource" "preseed_transit" {
   }
 
   provisioner "local-exec" {
-    command = "bash -c '${local.preseed_script}' _ transit ${join(" ", local.transit_images)}"
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      NODE="k3d-transit-server-0"
+      PLATFORM="${local.preseed_platform}"
+      for img in ${join(" ", local.transit_images)}; do
+        echo "[transit] $img"
+        docker pull --platform "$PLATFORM" "$img" >/dev/null 2>&1 || docker pull "$img" >/dev/null
+        TAR=$(mktemp -t k3d-preseed-XXXXXX.tar)
+        docker save --platform "$PLATFORM" "$img" -o "$TAR" 2>/dev/null || docker save "$img" -o "$TAR"
+        docker cp "$TAR" "$NODE:/tmp/preseed.tar" >/dev/null
+        docker exec "$NODE" ctr -n k8s.io image import /tmp/preseed.tar | tail -1
+        docker exec "$NODE" rm -f /tmp/preseed.tar
+        rm -f "$TAR"
+      done
+    EOT
   }
 
   depends_on = [module.transit_k3d]
@@ -106,7 +101,22 @@ resource "null_resource" "preseed_app_workload" {
   }
 
   provisioner "local-exec" {
-    command = "bash -c '${local.preseed_script}' _ app-workload ${join(" ", local.app_workload_images)}"
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      NODE="k3d-app-workload-server-0"
+      PLATFORM="${local.preseed_platform}"
+      for img in ${join(" ", local.app_workload_images)}; do
+        echo "[app-workload] $img"
+        docker pull --platform "$PLATFORM" "$img" >/dev/null 2>&1 || docker pull "$img" >/dev/null
+        TAR=$(mktemp -t k3d-preseed-XXXXXX.tar)
+        docker save --platform "$PLATFORM" "$img" -o "$TAR" 2>/dev/null || docker save "$img" -o "$TAR"
+        docker cp "$TAR" "$NODE:/tmp/preseed.tar" >/dev/null
+        docker exec "$NODE" ctr -n k8s.io image import /tmp/preseed.tar | tail -1
+        docker exec "$NODE" rm -f /tmp/preseed.tar
+        rm -f "$TAR"
+      done
+    EOT
   }
 
   depends_on = [module.app_workload_k3d]
@@ -119,7 +129,22 @@ resource "null_resource" "preseed_ai_workload" {
   }
 
   provisioner "local-exec" {
-    command = "bash -c '${local.preseed_script}' _ ai-workload ${join(" ", local.ai_workload_images)}"
+    interpreter = ["bash", "-c"]
+    command     = <<-EOT
+      set -euo pipefail
+      NODE="k3d-ai-workload-server-0"
+      PLATFORM="${local.preseed_platform}"
+      for img in ${join(" ", local.ai_workload_images)}; do
+        echo "[ai-workload] $img"
+        docker pull --platform "$PLATFORM" "$img" >/dev/null 2>&1 || docker pull "$img" >/dev/null
+        TAR=$(mktemp -t k3d-preseed-XXXXXX.tar)
+        docker save --platform "$PLATFORM" "$img" -o "$TAR" 2>/dev/null || docker save "$img" -o "$TAR"
+        docker cp "$TAR" "$NODE:/tmp/preseed.tar" >/dev/null
+        docker exec "$NODE" ctr -n k8s.io image import /tmp/preseed.tar | tail -1
+        docker exec "$NODE" rm -f /tmp/preseed.tar
+        rm -f "$TAR"
+      done
+    EOT
   }
 
   depends_on = [module.ai_workload_k3d]
