@@ -9,9 +9,11 @@ module "transit_k3d" {
 
   cluster_name = "transit"
   ports = [
-    { from = 80,  to = 8080 },
+    { from = 80, to = 8080 },
     { from = 443, to = 8443 },
   ]
+  volumes      = [local.mkcert_ca_volume]
+  host_aliases = local.k3d_host_aliases
 }
 
 # ── Namespaces ────────────────────────────────────────────────────────────────

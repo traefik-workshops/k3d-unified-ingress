@@ -8,12 +8,14 @@ module "ai_workload_k3d" {
   cluster_name = "ai-workload"
   # MCP uplink ports: 9447-9449
   ports = [
-    { from = 80,   to = 8082 },
-    { from = 443,  to = 8445 },
+    { from = 80, to = 8082 },
+    { from = 443, to = 8445 },
     { from = 9447, to = 9447 },
     { from = 9448, to = 9448 },
     { from = 9449, to = 9449 },
   ]
+  volumes      = [local.mkcert_ca_volume]
+  host_aliases = local.k3d_host_aliases
 
   depends_on = [module.app_workload_k3d]
 }

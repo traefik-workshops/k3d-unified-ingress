@@ -6,6 +6,34 @@
 #   brew install mkcert
 #   mkcert -install   (one-time: adds the local CA to the system trust store)
 
+# Resolve the mkcert CA root directory so we can mount it into k3d nodes.
+data "external" "mkcert_caroot" {
+  program = ["bash", "-c", "echo '{\"caroot\":\"'\"$(mkcert -CAROOT)\"'\"}'"]
+}
+
+locals {
+  mkcert_ca_volume = "${data.external.mkcert_caroot.result.caroot}/rootCA.pem:/etc/ssl/certs/mkcert-ca.pem"
+
+  # All *.domain subdomains that need to resolve to the host from inside k3d.
+  # k3d's hostAliases injects these into /etc/hosts on nodes and CoreDNS.
+  k3d_host_aliases = [{
+    ip = local.k3d_host
+    hostnames = [
+      var.domain,
+      "keycloak.${var.domain}",
+      "dashboard.${var.domain}",
+      "airlines.${var.domain}",
+      "portal.airlines.${var.domain}",
+      "board.airlines.${var.domain}",
+      "flight-ops.airlines.${var.domain}",
+      "passenger-svc.airlines.${var.domain}",
+      "airport-ops.airlines.${var.domain}",
+      "test.${var.domain}",
+      "grafana.${var.domain}",
+    ]
+  }]
+}
+
 resource "null_resource" "mkcert_cert" {
   triggers = {
     domain = var.domain

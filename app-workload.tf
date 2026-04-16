@@ -8,12 +8,14 @@ module "app_workload_k3d" {
   cluster_name = "app-workload"
   # Uplink ports: 9444-9446 (ops groups)
   ports = [
-    { from = 80,   to = 8081 },
-    { from = 443,  to = 8444 },
+    { from = 80, to = 8081 },
+    { from = 443, to = 8444 },
     { from = 9444, to = 9444 },
     { from = 9445, to = 9445 },
     { from = 9446, to = 9446 },
   ]
+  volumes      = [local.mkcert_ca_volume]
+  host_aliases = local.k3d_host_aliases
 
   depends_on = [module.transit_k3d]
 }
