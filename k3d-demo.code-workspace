@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"name": "k3d-unified-ingress",
+			"path": "../k3d-unified-ingress"
+		},
+		{
+			"name": "terraform-demo-modules",
+			"path": "../terraform-demo-modules"
+		},
+		{
+			"name": "traefik-demo-resources",
+			"path": "../traefik-demo-resources"
+		},
+		{
+			"name": "traefik-hub",
+			"path": "../traefik-hub"
+		}
+	],
+	"settings": {}
+}

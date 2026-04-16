@@ -1,0 +1,12 @@
+traefik_hub_tag       = "v3.20.0"
+traefik_chart_version = "40.0.0-ea.1"
+
+domain = "demo.traefik.localhost"
+
+traefik_hub_token     = "YOUR_TRAEFIK_HUB_TOKEN" 
+enable_offline_mode = false
+
+# Optional: per-cluster license overrides
+# transit_hub_token      = "TRANSIT_TOKEN"
+# app_workload_hub_token = "APP_WORKLOAD_TOKEN"
+# ai_workload_hub_token  = "AI_WORKLOAD_TOKEN"
