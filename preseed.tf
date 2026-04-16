@@ -11,8 +11,12 @@ locals {
   # Traefik Hub: pulled by all 3 clusters. Tag follows var.traefik_hub_tag.
   traefik_hub_image = "ghcr.io/traefik/traefik-hub:${var.traefik_hub_tag}"
 
-  # Transit-only: observability stack + API management Redis.
+  # Transit-only: observability stack + API management + airlines subcharts
+  # (keycloak, hoppscotch, ai-gateway/presidio — enabled on parent only).
+  # Discovery: `helm template` airlines chart with transit's values +
+  # grep operator.yaml for RELATED_IMAGE_* env vars (operators pull extras).
   transit_images = [
+    # Observability stack
     "docker.io/grafana/grafana:12.1.1",
     "docker.io/grafana/loki:3.5.5",
     "docker.io/kiwigrid/k8s-sidecar:1.30.10",
@@ -21,6 +25,17 @@ locals {
     "memcached:1.6.39-alpine",
     "otel/opentelemetry-collector-contrib:latest",
     "prom/memcached-exporter:v0.15.3",
+    # Keycloak (operator + dynamically-pulled server image)
+    "quay.io/keycloak/keycloak-operator:26.5.2",
+    "quay.io/keycloak/keycloak:26.5.2",
+    "postgres:15-alpine",
+    "bitnami/kubectl:latest",
+    # Hoppscotch API tester
+    "hoppscotch/hoppscotch:2026.2.0",
+    "postgres:16-alpine",
+    # AI Gateway subcharts
+    "mcr.microsoft.com/presidio-analyzer:2.2.358",
+    # Traefik Hub
     local.traefik_hub_image,
   ]
 

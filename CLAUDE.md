@@ -119,6 +119,33 @@ The airlines demo includes a Hoppscotch collection with two sections:
 
 **Collection source**: `traefik-demo-resources/airlines/helm/templates/hoppscotch-collection.yaml`
 
+## Preseeding container images
+
+`preseed.tf` pulls rate-limited / large images to the local Docker daemon and imports them into each k3d cluster before Helm releases run. This avoids Docker Hub rate limits and speeds up `terraform apply`.
+
+**When to update**: Whenever a chart change adds/bumps images, or a new subchart is enabled, regenerate the image lists.
+
+**Discovery method** (run from `traefik-demo-resources/airlines/helm`):
+
+```bash
+# 1. Render the chart with the exact values Terraform passes (see main.tf /
+#    app-workload.tf / ai-workload.tf helm_release blocks) and extract images:
+helm template airlines . \
+  --set global.domain=demo.traefik.localhost \
+  --set global.port=8443 \
+  --set global.multicluster.enabled=true \
+  --set global.multicluster.mode=parent \
+  --set aiGateway.enabled=true --set keycloak.enabled=true --set hoppscotch.enabled=true \
+  2>&1 | grep -E "^\s+image:" | sort -u
+
+# 2. helm template misses operator-managed dynamic images. Grep subchart
+#    operator manifests for RELATED_IMAGE_* env vars or hardcoded refs:
+grep -r "quay.io\|mcr.microsoft.com\|docker.io" \
+  ../../keycloak/helm/templates/ ../../ai-gateway/helm/templates/
+```
+
+Do this for each cluster's actual value set (transit = parent + aiGateway/keycloak/hoppscotch enabled; app-workload = child + ops groups; ai-workload = child + mcp groups). Add new images to the correct list in `preseed.tf`.
+
 ## Tech Stack Summary
 
 | Layer | Technology |
