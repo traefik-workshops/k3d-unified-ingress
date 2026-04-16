@@ -48,3 +48,9 @@ variable "enable_offline_mode" {
   description = "Enable Traefik Hub offline mode across all clusters"
   default     = false
 }
+
+variable "preseed_arch" {
+  type        = string
+  description = "Architecture for image preseed (arm64 on Apple Silicon, amd64 on Intel). Detected from uname if empty."
+  default     = null
+}

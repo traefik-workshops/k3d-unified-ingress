@@ -6,6 +6,12 @@
 # Images are grouped per cluster based on what actually gets scheduled there.
 # Only Docker Hub images (rate-limited) and the large Traefik Hub image are
 # preseeded; ghcr.io / quay.io / registry.k8s.io images aren't rate-limited.
+#
+# Implementation note: Docker Desktop's containerd image store produces
+# multi-arch OCI tarballs that `k3d image import` / `ctr import` can't
+# validate (missing platform-specific digests). Workaround: `docker save
+# --platform <os/arch>` to export a single-arch tarball, then `docker cp`
+# + `ctr -n k8s.io image import` directly into the node's containerd.
 
 locals {
   # Traefik Hub: pulled by all 3 clusters. Tag follows var.traefik_hub_tag.
@@ -54,21 +60,40 @@ locals {
   ]
 }
 
+locals {
+  # Architecture to preseed. k3d nodes run the host arch (arm64 on Apple
+  # Silicon, amd64 on Intel). Override via TF_VAR if needed.
+  preseed_platform = "linux/${coalesce(var.preseed_arch, "arm64")}"
+
+  preseed_script = <<-BASH
+    set -euo pipefail
+    CLUSTER="$1"
+    shift
+    NODE="k3d-$${CLUSTER}-server-0"
+    PLATFORM="${local.preseed_platform}"
+    for img in "$@"; do
+      echo "[$${CLUSTER}] pulling $$img ($$PLATFORM)..."
+      docker pull --platform "$$PLATFORM" "$$img"
+      TAR="$$(mktemp -t k3d-preseed-XXXXXX.tar)"
+      trap 'rm -f "$$TAR"' EXIT
+      docker save --platform "$$PLATFORM" "$$img" -o "$$TAR"
+      docker cp "$$TAR" "$$NODE:/tmp/preseed.tar"
+      docker exec "$$NODE" ctr -n k8s.io image import /tmp/preseed.tar
+      docker exec "$$NODE" rm -f /tmp/preseed.tar
+      rm -f "$$TAR"
+      trap - EXIT
+    done
+  BASH
+}
+
 resource "null_resource" "preseed_transit" {
   triggers = {
-    images = join(",", local.transit_images)
+    cluster_id = module.transit_k3d.host
+    images     = join(",", local.transit_images)
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      for img in ${join(" ", local.transit_images)}; do
-        echo "Pulling $img..."
-        docker pull "$img"
-        echo "Importing $img into k3d-transit..."
-        k3d image import "$img" -c transit
-      done
-    EOT
+    command = "bash -c '${local.preseed_script}' _ transit ${join(" ", local.transit_images)}"
   }
 
   depends_on = [module.transit_k3d]
@@ -76,19 +101,12 @@ resource "null_resource" "preseed_transit" {
 
 resource "null_resource" "preseed_app_workload" {
   triggers = {
-    images = join(",", local.app_workload_images)
+    cluster_id = module.app_workload_k3d.host
+    images     = join(",", local.app_workload_images)
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      for img in ${join(" ", local.app_workload_images)}; do
-        echo "Pulling $img..."
-        docker pull "$img"
-        echo "Importing $img into k3d-app-workload..."
-        k3d image import "$img" -c app-workload
-      done
-    EOT
+    command = "bash -c '${local.preseed_script}' _ app-workload ${join(" ", local.app_workload_images)}"
   }
 
   depends_on = [module.app_workload_k3d]
@@ -96,19 +114,12 @@ resource "null_resource" "preseed_app_workload" {
 
 resource "null_resource" "preseed_ai_workload" {
   triggers = {
-    images = join(",", local.ai_workload_images)
+    cluster_id = module.ai_workload_k3d.host
+    images     = join(",", local.ai_workload_images)
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      set -e
-      for img in ${join(" ", local.ai_workload_images)}; do
-        echo "Pulling $img..."
-        docker pull "$img"
-        echo "Importing $img into k3d-ai-workload..."
-        k3d image import "$img" -c ai-workload
-      done
-    EOT
+    command = "bash -c '${local.preseed_script}' _ ai-workload ${join(" ", local.ai_workload_images)}"
   }
 
   depends_on = [module.ai_workload_k3d]
