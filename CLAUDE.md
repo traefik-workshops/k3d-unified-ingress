@@ -106,6 +106,19 @@ terraform apply
 - Dashboard entries are separate Vite entry points in `dashboard-app/src/entries/`
 - Helm chart publishes to `oci://ghcr.io/traefik-workshops/<chart>` via GitHub Actions on `v*` tags
 
+## Testing with Hoppscotch (when clusters are up)
+
+The airlines demo includes a Hoppscotch collection with two sections:
+
+- **"Airlines APIs"** — Functional tests for all API endpoints (Flight Operations, Passenger Services, Airport Operations). These include test scripts that validate response status codes, headers (e.g. deprecation), and payload structure. **Always run these after making changes to APIs, routes, middlewares, or multicluster config.**
+- **"Traefik Demo"** — Demo walkthroughs for API Gateway, AI Gateway, MCP Gateway, Agentic Gateway, and API Management features.
+
+**Access**: `https://test.demo.traefik.localhost:8443/import?type=hoppscotch&url=/airlines/collection.json`
+
+**When to run**: After `terraform apply` when clusters are up and pods are healthy. Run the "Airlines APIs" section to verify nothing is broken. Enrich the test collection with assertions for any new features added.
+
+**Collection source**: `traefik-demo-resources/airlines/helm/templates/hoppscotch-collection.yaml`
+
 ## Tech Stack Summary
 
 | Layer | Technology |
