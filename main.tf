@@ -2,6 +2,16 @@ locals {
   prometheus_port = 8889
   # host.k3d.internal resolves to the host machine from inside k3d clusters
   k3d_host = "host.k3d.internal"
+
+  # Mount the node's CA bundle (with mkcert CA appended) into Traefik pods
+  mkcert_volumes = [{
+    name     = "ca-certs"
+    hostPath = { path = "/etc/ssl/certs", type = "Directory" }
+  }]
+  mkcert_volume_mounts = [{
+    name      = "ca-certs"
+    mountPath = "/etc/ssl/certs"
+  }]
 }
 
 module "transit_k3d" {
@@ -105,6 +115,9 @@ module "transit_traefik" {
     kubernetes_namespace_v1.transit_apps.metadata[0].name,
     "traefik-airlines",
   ]
+
+  additional_volumes       = local.mkcert_volumes
+  additional_volume_mounts = local.mkcert_volume_mounts
 
   depends_on = [kubernetes_namespace_v1.transit_traefik]
 

@@ -162,6 +162,7 @@ resource "null_resource" "mkcert_transit" {
 
   provisioner "local-exec" {
     command = <<-EOT
+      docker exec k3d-transit-server-0 sh -c 'cat /etc/ssl/certs/mkcert-ca.pem >> /etc/ssl/certs/ca-certificates.crt'
       kubectl --kubeconfig=${local_sensitive_file.kubeconfig_transit.filename} -n traefik create secret tls mkcert-tls \
         --cert=${path.module}/mkcert/cert.pem \
         --key=${path.module}/mkcert/key.pem \
@@ -178,6 +179,7 @@ resource "null_resource" "mkcert_app_workload" {
 
   provisioner "local-exec" {
     command = <<-EOT
+      docker exec k3d-app-workload-server-0 sh -c 'cat /etc/ssl/certs/mkcert-ca.pem >> /etc/ssl/certs/ca-certificates.crt'
       kubectl --kubeconfig=${local_sensitive_file.kubeconfig_app_workload.filename} -n traefik create secret tls mkcert-tls \
         --cert=${path.module}/mkcert/cert.pem \
         --key=${path.module}/mkcert/key.pem \
@@ -194,6 +196,7 @@ resource "null_resource" "mkcert_ai_workload" {
 
   provisioner "local-exec" {
     command = <<-EOT
+      docker exec k3d-ai-workload-server-0 sh -c 'cat /etc/ssl/certs/mkcert-ca.pem >> /etc/ssl/certs/ca-certificates.crt'
       kubectl --kubeconfig=${local_sensitive_file.kubeconfig_ai_workload.filename} -n traefik create secret tls mkcert-tls \
         --cert=${path.module}/mkcert/cert.pem \
         --key=${path.module}/mkcert/key.pem \
