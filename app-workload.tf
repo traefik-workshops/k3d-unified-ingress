@@ -100,7 +100,7 @@ module "app_workload_traefik" {
   additional_volumes       = local.mkcert_volumes
   additional_volume_mounts = local.mkcert_volume_mounts
 
-  depends_on = [kubernetes_namespace_v1.app_workload_traefik]
+  depends_on = [kubernetes_namespace_v1.app_workload_traefik, null_resource.preseed_app_workload]
 
   providers = {
     kubernetes = kubernetes.app_workload

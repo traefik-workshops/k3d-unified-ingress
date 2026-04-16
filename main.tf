@@ -119,7 +119,7 @@ module "transit_traefik" {
   additional_volumes       = local.mkcert_volumes
   additional_volume_mounts = local.mkcert_volume_mounts
 
-  depends_on = [kubernetes_namespace_v1.transit_traefik]
+  depends_on = [kubernetes_namespace_v1.transit_traefik, null_resource.preseed_transit]
 
   providers = {
     kubernetes = kubernetes.transit
