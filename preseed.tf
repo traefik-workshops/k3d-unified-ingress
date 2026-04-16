@@ -41,6 +41,10 @@ locals {
     "postgres:16-alpine",
     # AI Gateway subcharts
     "mcr.microsoft.com/presidio-analyzer:2.2.358",
+    # Airlines HA backends run on parent (local leg of WRR).
+    # nginx is used as a sidecar by hoppscotch on parent.
+    "python:3.11-slim",
+    "nginx:alpine",
     # Traefik Hub
     local.traefik_hub_image,
   ]
