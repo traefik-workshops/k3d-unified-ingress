@@ -7,8 +7,13 @@
 #   mkcert -install   (one-time: adds the local CA to the system trust store)
 
 # Resolve the mkcert CA root directory so we can mount it into k3d nodes.
+# Resolve the Docker host gateway IP for hostAliases (must be a real IP, not a hostname).
 data "external" "mkcert_caroot" {
   program = ["bash", "-c", "echo '{\"caroot\":\"'\"$(mkcert -CAROOT)\"'\"}'"]
+}
+
+data "external" "docker_host_ip" {
+  program = ["bash", "-c", "echo '{\"ip\":\"'\"$(docker run --rm alpine getent hosts host.docker.internal | awk '{print $1}')\"'\"}'"]
 }
 
 locals {
@@ -17,7 +22,7 @@ locals {
   # All *.domain subdomains that need to resolve to the host from inside k3d.
   # k3d's hostAliases injects these into /etc/hosts on nodes and CoreDNS.
   k3d_host_aliases = [{
-    ip = local.k3d_host
+    ip = data.external.docker_host_ip.result.ip
     hostnames = [
       var.domain,
       "keycloak.${var.domain}",
