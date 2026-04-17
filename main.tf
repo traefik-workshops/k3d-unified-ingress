@@ -22,8 +22,12 @@ module "transit_k3d" {
     { from = 80, to = 8080 },
     { from = 443, to = 8443 },
   ]
-  volumes      = [local.mkcert_ca_volume]
-  host_aliases = local.k3d_host_aliases
+  volumes           = [local.mkcert_ca_volume]
+  host_aliases      = local.k3d_host_aliases
+  registries_use    = [local.registry_mirror_container]
+  registries_config = local.registries_yaml
+
+  depends_on = [null_resource.registry_mirror]
 }
 
 # ── Namespaces ────────────────────────────────────────────────────────────────
@@ -119,7 +123,7 @@ module "transit_traefik" {
   additional_volumes       = local.mkcert_volumes
   additional_volume_mounts = local.mkcert_volume_mounts
 
-  depends_on = [kubernetes_namespace_v1.transit_traefik, null_resource.preseed_transit]
+  depends_on = [kubernetes_namespace_v1.transit_traefik]
 
   providers = {
     kubernetes = kubernetes.transit

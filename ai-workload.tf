@@ -14,10 +14,12 @@ module "ai_workload_k3d" {
     { from = 9448, to = 9448 },
     { from = 9449, to = 9449 },
   ]
-  volumes      = [local.mkcert_ca_volume]
-  host_aliases = local.k3d_host_aliases
+  volumes           = [local.mkcert_ca_volume]
+  host_aliases      = local.k3d_host_aliases
+  registries_use    = [local.registry_mirror_container]
+  registries_config = local.registries_yaml
 
-  depends_on = [module.app_workload_k3d]
+  depends_on = [module.app_workload_k3d, null_resource.registry_mirror]
 }
 
 # ── Namespaces ────────────────────────────────────────────────────────────────
@@ -123,7 +125,7 @@ module "ai_workload_traefik" {
   additional_volumes       = local.mkcert_volumes
   additional_volume_mounts = local.mkcert_volume_mounts
 
-  depends_on = [kubernetes_namespace_v1.ai_workload_traefik, null_resource.preseed_ai_workload]
+  depends_on = [kubernetes_namespace_v1.ai_workload_traefik]
 
   providers = {
     kubernetes = kubernetes.ai_workload

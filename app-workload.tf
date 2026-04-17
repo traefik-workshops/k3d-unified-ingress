@@ -14,10 +14,12 @@ module "app_workload_k3d" {
     { from = 9445, to = 9445 },
     { from = 9446, to = 9446 },
   ]
-  volumes      = [local.mkcert_ca_volume]
-  host_aliases = local.k3d_host_aliases
+  volumes           = [local.mkcert_ca_volume]
+  host_aliases      = local.k3d_host_aliases
+  registries_use    = [local.registry_mirror_container]
+  registries_config = local.registries_yaml
 
-  depends_on = [module.transit_k3d]
+  depends_on = [module.transit_k3d, null_resource.registry_mirror]
 }
 
 # ── Namespaces ────────────────────────────────────────────────────────────────
@@ -100,7 +102,7 @@ module "app_workload_traefik" {
   additional_volumes       = local.mkcert_volumes
   additional_volume_mounts = local.mkcert_volume_mounts
 
-  depends_on = [kubernetes_namespace_v1.app_workload_traefik, null_resource.preseed_app_workload]
+  depends_on = [kubernetes_namespace_v1.app_workload_traefik]
 
   providers = {
     kubernetes = kubernetes.app_workload

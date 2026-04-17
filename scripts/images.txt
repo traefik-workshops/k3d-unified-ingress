@@ -1,0 +1,24 @@
+# Docker Hub images required by the k3d clusters. One per line.
+# Non-docker.io images (ghcr.io, quay.io, mcr.*) aren't listed — they're
+# pulled directly from upstream at cluster create time (no rate limits).
+#
+# When adding a new image, add it here then run `make sync`.
+
+# Observability stack (transit only)
+docker.io/grafana/grafana:12.1.1
+docker.io/grafana/loki:3.5.5
+docker.io/grafana/tempo:2.8.2
+docker.io/kiwigrid/k8s-sidecar:1.30.10
+docker.io/otel/opentelemetry-collector-contrib:latest
+docker.io/prom/memcached-exporter:v0.15.3
+docker.io/library/memcached:1.6.39-alpine
+docker.io/library/redis:8.2.1
+
+# Airlines chart (transit + workload children)
+docker.io/library/python:3.11-slim
+docker.io/library/nginx:alpine
+docker.io/library/node:20-alpine
+docker.io/library/postgres:15-alpine
+docker.io/library/postgres:16-alpine
+docker.io/bitnami/kubectl:latest
+docker.io/hoppscotch/hoppscotch:2026.2.0
