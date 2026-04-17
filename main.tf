@@ -14,38 +14,19 @@ locals {
   }]
 }
 
-module "transit_k3d" {
-  source = "../terraform-demo-modules/compute/suse/k3d"
-
-  cluster_name = "transit"
-  ports = [
-    { from = 80, to = 8080 },
-    { from = 443, to = 8443 },
-  ]
-  volumes           = [local.mkcert_ca_volume]
-  host_aliases      = local.k3d_host_aliases
-  registries_use    = [local.registry_mirror_container]
-  registries_config = local.registries_yaml
-
-  depends_on = [null_resource.registry_mirror]
-}
-
 # ── Namespaces ────────────────────────────────────────────────────────────────
 resource "kubernetes_namespace_v1" "transit_traefik" {
-  provider   = kubernetes.transit
-  depends_on = [module.transit_k3d]
+  provider = kubernetes.transit
   metadata { name = "traefik" }
 }
 
 resource "kubernetes_namespace_v1" "transit_observability" {
-  provider   = kubernetes.transit
-  depends_on = [module.transit_k3d]
+  provider = kubernetes.transit
   metadata { name = "traefik-observability" }
 }
 
 resource "kubernetes_namespace_v1" "transit_apps" {
-  provider   = kubernetes.transit
-  depends_on = [module.transit_k3d]
+  provider = kubernetes.transit
   metadata { name = "apps" }
 }
 
@@ -108,6 +89,10 @@ module "transit_traefik" {
       }
       ai-workload-airport-ops-mcp = {
         address          = "https://${local.k3d_host}:9449"
+        serversTransport = { insecureSkipVerify = true }
+      }
+      ai-workload-ai-gateway = {
+        address          = "https://${local.k3d_host}:9450"
         serversTransport = { insecureSkipVerify = true }
       }
     }
@@ -201,6 +186,7 @@ resource "helm_release" "transit_airlines" {
               passengerSvcMcp = "ai-workload-passenger-svc-mcp"
               airportOps      = "app-workload-airport-ops"
               airportOpsMcp   = "ai-workload-airport-ops-mcp"
+              aiGateway       = "ai-workload-ai-gateway"
             }
           }
         }

@@ -2,36 +2,14 @@ locals {
   app_domain = "app.${var.domain}"
 }
 
-module "app_workload_k3d" {
-  source = "../terraform-demo-modules/compute/suse/k3d"
-
-  cluster_name = "app-workload"
-  # Uplink ports: 9444-9446 (ops groups)
-  ports = [
-    { from = 80, to = 8081 },
-    { from = 443, to = 8444 },
-    { from = 9444, to = 9444 },
-    { from = 9445, to = 9445 },
-    { from = 9446, to = 9446 },
-  ]
-  volumes           = [local.mkcert_ca_volume]
-  host_aliases      = local.k3d_host_aliases
-  registries_use    = [local.registry_mirror_container]
-  registries_config = local.registries_yaml
-
-  depends_on = [module.transit_k3d, null_resource.registry_mirror]
-}
-
 # ── Namespaces ────────────────────────────────────────────────────────────────
 resource "kubernetes_namespace_v1" "app_workload_traefik" {
-  provider   = kubernetes.app_workload
-  depends_on = [module.app_workload_k3d]
+  provider = kubernetes.app_workload
   metadata { name = "traefik" }
 }
 
 resource "kubernetes_namespace_v1" "app_workload_airlines" {
-  provider   = kubernetes.app_workload
-  depends_on = [module.app_workload_k3d]
+  provider = kubernetes.app_workload
   metadata { name = "traefik-airlines" }
 }
 

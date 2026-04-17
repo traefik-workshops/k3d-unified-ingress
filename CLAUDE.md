@@ -14,7 +14,7 @@ Local multi-cluster Traefik Hub demo environment using k3d (k3s in Docker). Prov
 | **app-workload** | Hub child | 8081 / 8444 | Flight Ops, Passenger Svc, Airport Ops APIs |
 | **ai-workload** | Hub child | 8082 / 8445 | MCP servers, AI Gateway |
 
-Uplink ports: 9444–9446 (API groups), 9447–9449 (MCP groups).
+Uplink ports: 9444–9446 (API groups), 9447–9449 (MCP groups), 9450 (AI gateway).
 
 ## Related Repositories
 
@@ -144,7 +144,7 @@ grep -r "quay.io\|mcr.microsoft.com\|docker.io" \
   ../../keycloak/helm/templates/ ../../ai-gateway/helm/templates/
 ```
 
-Do this for each cluster's actual value set (transit = parent + aiGateway/keycloak/hoppscotch enabled; app-workload = child + ops groups; ai-workload = child + mcp groups). Add new images to the correct list in `preseed.tf`.
+Do this for each cluster's actual value set (transit = parent + aiGateway/keycloak/hoppscotch enabled, aiGateway workloads delegated to ai-workload via `parent.groups.aiGateway`; app-workload = child + ops groups; ai-workload = child + mcp groups + aiGateway). Add new images to the correct list in `preseed.tf`.
 
 ## Tech Stack Summary
 

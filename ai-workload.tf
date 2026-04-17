@@ -2,42 +2,19 @@ locals {
   ai_domain = "ai.${var.domain}"
 }
 
-module "ai_workload_k3d" {
-  source = "../terraform-demo-modules/compute/suse/k3d"
-
-  cluster_name = "ai-workload"
-  # MCP uplink ports: 9447-9449
-  ports = [
-    { from = 80, to = 8082 },
-    { from = 443, to = 8445 },
-    { from = 9447, to = 9447 },
-    { from = 9448, to = 9448 },
-    { from = 9449, to = 9449 },
-  ]
-  volumes           = [local.mkcert_ca_volume]
-  host_aliases      = local.k3d_host_aliases
-  registries_use    = [local.registry_mirror_container]
-  registries_config = local.registries_yaml
-
-  depends_on = [module.app_workload_k3d, null_resource.registry_mirror]
-}
-
 # ── Namespaces ────────────────────────────────────────────────────────────────
 resource "kubernetes_namespace_v1" "ai_workload_traefik" {
-  provider   = kubernetes.ai_workload
-  depends_on = [module.ai_workload_k3d]
+  provider = kubernetes.ai_workload
   metadata { name = "traefik" }
 }
 
 resource "kubernetes_namespace_v1" "ai_workload_tools" {
-  provider   = kubernetes.ai_workload
-  depends_on = [module.ai_workload_k3d]
+  provider = kubernetes.ai_workload
   metadata { name = "traefik-tools" }
 }
 
 resource "kubernetes_namespace_v1" "ai_workload_airlines" {
-  provider   = kubernetes.ai_workload
-  depends_on = [module.ai_workload_k3d]
+  provider = kubernetes.ai_workload
   metadata { name = "traefik-airlines" }
 }
 
@@ -105,6 +82,12 @@ module "ai_workload_traefik" {
       expose = { default = true }
       http   = { tls = { enabled = true } }
     }
+    "ai-gateway" = {
+      port   = 9450
+      uplink = true
+      expose = { default = true }
+      http   = { tls = { enabled = true } }
+    }
   }
 
   custom_arguments = [
@@ -114,6 +97,8 @@ module "ai_workload_traefik" {
     "--hub.uplinkEntryPoints.passenger-svc-mcp.http.tls=true",
     "--hub.uplinkEntryPoints.airport-ops-mcp.address=:9449",
     "--hub.uplinkEntryPoints.airport-ops-mcp.http.tls=true",
+    "--hub.uplinkEntryPoints.ai-gateway.address=:9450",
+    "--hub.uplinkEntryPoints.ai-gateway.http.tls=true",
   ]
 
   kubernetes_namespaces = [
@@ -173,6 +158,7 @@ resource "helm_release" "ai_workload_airlines" {
               flightOpsMcp    = true
               passengerSvcMcp = true
               airportOpsMcp   = true
+              aiGateway       = true
             }
             mcp = {
               base       = "http://traefik.traefik.svc.cluster.local"
@@ -186,6 +172,7 @@ resource "helm_release" "ai_workload_airlines" {
           }
         }
       }
+      aiGateway  = { enabled = true }
       hoppscotch = { enabled = false }
       keycloak   = { enabled = false }
     })
