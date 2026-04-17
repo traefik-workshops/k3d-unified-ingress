@@ -100,7 +100,13 @@ resource "helm_release" "app_workload_airlines" {
   values = [
     yamlencode({
       global = {
-        domain = local.app_domain
+        # User-facing URLs (OIDC issuer/redirect, dashboard hosts, portal
+        # trustedUrls) are served by the parent on var.domain:8443. Use those
+        # values here so the airlines chart renders correct URLs from the
+        # child cluster — local.app_domain is only for this cluster's own
+        # Traefik dashboard, which is wired by the Traefik module.
+        domain = var.domain
+        port   = 8443
         multicluster = {
           enabled = true
           mode    = "child"
