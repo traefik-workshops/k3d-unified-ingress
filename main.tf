@@ -36,15 +36,18 @@ module "transit_traefik" {
 
   namespace = kubernetes_namespace_v1.transit_traefik.metadata[0].name
 
-  enable_api_gateway    = true
-  enable_ai_gateway     = true
-  enable_mcp_gateway    = true
-  enable_api_management = true
-  traefik_hub_tag       = var.traefik_hub_tag
-  traefik_chart_version = var.traefik_chart_version
-  enable_offline_mode   = var.enable_offline_mode
-  skip_gateway_api_crds = true
-  enable_debug          = true
+  enable_api_gateway      = true
+  enable_ai_gateway       = true
+  enable_mcp_gateway      = true
+  enable_api_management   = true
+  traefik_hub_tag         = var.traefik_hub_tag
+  traefik_chart_version   = var.traefik_chart_version
+  custom_image_registry   = local.hub_image_registry
+  custom_image_repository = local.hub_image_repository
+  custom_image_tag        = local.hub_image_tag
+  enable_offline_mode     = var.enable_offline_mode
+  skip_gateway_api_crds   = true
+  enable_debug            = true
 
   replica_count     = 1
   traefik_hub_token = coalesce(var.transit_hub_token, var.traefik_hub_token)
@@ -54,6 +57,9 @@ module "transit_traefik" {
   enable_otlp_application_logs = false
   enable_otlp_metrics          = true
   enable_otlp_traces           = true
+  # OTel collector lives in traefik-observability namespace (release name
+  # "opentelemetry" -> service "opentelemetry-opentelemetry-collector").
+  otlp_address = "http://opentelemetry-opentelemetry-collector.${kubernetes_namespace_v1.transit_observability.metadata[0].name}.svc.cluster.local:4318"
 
   dashboard_entrypoints = ["websecure"]
   dashboard_match_rule  = "Host(`dashboard.${var.domain}`)"
@@ -162,11 +168,12 @@ module "transit_grafana" {
 
 # ── Airlines (parent) ─────────────────────────────────────────────────────────
 resource "helm_release" "transit_airlines" {
-  provider         = helm.transit
-  name             = "airlines"
-  namespace        = "traefik-airlines"
-  create_namespace = true
-  timeout          = 2400
+  provider          = helm.transit
+  name              = "airlines"
+  namespace         = "traefik-airlines"
+  create_namespace  = true
+  timeout           = 2400
+  dependency_update = true
 
   chart = "${path.module}/../traefik-demo-resources/airlines/helm"
 
@@ -191,7 +198,17 @@ resource "helm_release" "transit_airlines" {
           }
         }
       }
-      aiGateway  = { enabled = true }
+      aiGateway = {
+        enabled = true
+        apiKeys = {
+          openai    = var.openai_api_key
+          gemini    = var.gemini_api_key
+          anthropic = var.anthropic_api_key
+        }
+        claudeMode = {
+          anthropic = var.anthropic_claude_mode
+        }
+      }
       hoppscotch = { enabled = true }
       keycloak   = { enabled = true }
     })
