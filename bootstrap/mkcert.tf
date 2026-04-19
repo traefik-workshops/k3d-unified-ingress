@@ -37,6 +37,7 @@ locals {
       "airport-ops.airlines.${var.domain}",
       "test.${var.domain}",
       "grafana.${var.domain}",
+      "collector.${var.domain}",
     ]
   }]
 }

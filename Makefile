@@ -63,8 +63,10 @@ destroy: ## Destroy root resources only (leaves clusters intact)
 	terraform destroy -auto-approve
 
 # ── Combined flows ───────────────────────────────────────────────────────────
-.PHONY: up down nuke
-up: bootstrap apply ## Full bring-up: bootstrap then apply
+.PHONY: up up-dev down nuke
+up: bootstrap apply ## Full bring-up: bootstrap then apply (upstream hub image)
+
+up-dev: bootstrap build-hub apply-dev ## Full bring-up using a locally-built traefik-hub :dev image
 
 down: destroy bootstrap-destroy ## Full tear-down: destroy root then bootstrap
 
@@ -92,6 +94,30 @@ clean-registry: ## Delete registry container AND cache volume (wipes cache)
 	@read _
 	-docker rm -f k3d-registry-mirror
 	-docker volume rm k3d-registry-mirror-data
+
+# ── Local traefik-hub dev image ──────────────────────────────────────────────
+# Build the hub from ../traefik-hub, push to the bootstrap registry, and apply
+# with local_traefik_hub=true so all three clusters pull :dev instead of the
+# upstream ghcr.io image. To return to upstream: `make apply` (or unset
+# local_traefik_hub in terraform.tfvars).
+#
+# Rebuilding the image with the same :dev tag changes the digest but will NOT
+# auto-restart running pods. After `make build-hub`, refresh with:
+#   kubectl --context k3d-transit      -n traefik rollout restart deploy
+#   kubectl --context k3d-app-workload -n traefik rollout restart deploy
+#   kubectl --context k3d-ai-workload  -n traefik rollout restart deploy
+TRAEFIK_HUB_DIR      := ../traefik-hub
+HUB_DEV_REGISTRY     := localhost:5001/traefik
+HUB_DEV_IMAGE        := $(HUB_DEV_REGISTRY)/traefik-hub:dev
+
+.PHONY: build-hub apply-dev
+build-hub: bootstrap ## Build ../traefik-hub and push to local registry as :dev
+	$(MAKE) -C $(TRAEFIK_HUB_DIR) dev-image DOCKER_REGISTRY=$(HUB_DEV_REGISTRY)
+	skopeo copy --dest-tls-verify=false \
+	  docker-daemon:$(HUB_DEV_IMAGE) docker://$(HUB_DEV_IMAGE)
+
+apply-dev: init sync ## Apply root with local_traefik_hub=true (uses :dev image)
+	terraform apply -auto-approve -var=local_traefik_hub=true
 
 # ── Housekeeping ─────────────────────────────────────────────────────────────
 .PHONY: fmt validate

@@ -11,6 +11,9 @@
 		{
 			"name": "traefik-demo-resources",
 			"path": "../traefik-demo-resources"
+		},
+		{
+			"path": "../traefik-hub"
 		}
 	],
 	"settings": {}

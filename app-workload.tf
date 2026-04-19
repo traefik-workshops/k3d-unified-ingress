@@ -19,14 +19,17 @@ module "app_workload_traefik" {
 
   namespace = kubernetes_namespace_v1.app_workload_traefik.metadata[0].name
 
-  enable_api_gateway    = true
-  enable_ai_gateway     = false
-  enable_mcp_gateway    = false
-  enable_api_management = false
-  traefik_hub_tag       = var.traefik_hub_tag
-  traefik_chart_version = var.traefik_chart_version
-  enable_offline_mode   = var.enable_offline_mode
-  skip_gateway_api_crds = true
+  enable_api_gateway      = true
+  enable_ai_gateway       = false
+  enable_mcp_gateway      = false
+  enable_api_management   = false
+  traefik_hub_tag         = var.traefik_hub_tag
+  traefik_chart_version   = var.traefik_chart_version
+  custom_image_registry   = local.hub_image_registry
+  custom_image_repository = local.hub_image_repository
+  custom_image_tag        = local.hub_image_tag
+  enable_offline_mode     = var.enable_offline_mode
+  skip_gateway_api_crds   = true
 
   replica_count     = 1
   traefik_hub_token = coalesce(var.app_workload_hub_token, var.traefik_hub_token)
@@ -36,6 +39,9 @@ module "app_workload_traefik" {
   enable_otlp_application_logs = false
   enable_otlp_metrics          = true
   enable_otlp_traces           = true
+  # Push OTLP to transit's collector exposed via ingress
+  # (host.docker.internal:8443 via hostAliases -> Traefik on transit).
+  otlp_address = "https://collector.${var.domain}:8443"
 
   dashboard_entrypoints = ["websecure"]
   dashboard_match_rule  = "Host(`dashboard.${local.app_domain}`)"
@@ -90,10 +96,11 @@ module "app_workload_traefik" {
 
 # ── Airlines (child) ──────────────────────────────────────────────────────────
 resource "helm_release" "app_workload_airlines" {
-  provider         = helm.app_workload
-  name             = "airlines"
-  namespace        = "traefik-airlines"
-  create_namespace = false
+  provider          = helm.app_workload
+  name              = "airlines"
+  namespace         = "traefik-airlines"
+  create_namespace  = false
+  dependency_update = true
 
   chart = "${path.module}/../traefik-demo-resources/airlines/helm"
 

@@ -10,3 +10,12 @@ enable_offline_mode = false
 # transit_hub_token      = "TRANSIT_TOKEN"
 # app_workload_hub_token = "APP_WORKLOAD_TOKEN"
 # ai_workload_hub_token  = "AI_WORKLOAD_TOKEN"
+
+# Optional: use a locally-built traefik-hub image instead of upstream
+# (run `make build-hub` first to populate localhost:5001/traefik/traefik-hub:dev).
+# local_traefik_hub = true
+
+# Optional: ai-gateway endpoint API keys
+# openai_api_key    = "sk-..."
+# gemini_api_key    = "AIza..."
+# anthropic_api_key = "sk-ant-..."

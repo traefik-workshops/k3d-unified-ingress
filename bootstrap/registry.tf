@@ -19,6 +19,9 @@ locals {
       "docker.io":
         endpoint:
           - http://${local.registry_mirror_container}:5000
+      "localhost:5001":
+        endpoint:
+          - http://${local.registry_mirror_container}:5000
   YAML
 }
 

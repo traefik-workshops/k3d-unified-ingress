@@ -134,6 +134,13 @@ module "transit_otel" {
   enable_tempo      = true
   tempo_endpoint    = "http://tempo:4318"
 
+  # Expose the OTLP HTTP receiver at collector.<domain>:8443 so the
+  # app-workload and ai-workload clusters (which have no local collector)
+  # can push metrics/traces/logs into transit's observability stack.
+  ingress            = true
+  ingress_domain     = var.domain
+  ingress_entrypoint = "websecure"
+
   depends_on = [kubernetes_namespace_v1.transit_observability]
 
   providers = {
