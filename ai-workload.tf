@@ -40,10 +40,11 @@ module "ai_workload_traefik" {
   traefik_hub_token = coalesce(var.ai_workload_hub_token, var.traefik_hub_token)
 
   log_level                    = "INFO"
-  enable_otlp_access_logs      = false
-  enable_otlp_application_logs = false
+  enable_otlp_access_logs      = true
+  enable_otlp_application_logs = true
   enable_otlp_metrics          = true
   enable_otlp_traces           = true
+  otlp_service_name            = "traefik-ai-workload"
   # Push OTLP to transit's collector exposed via ingress
   # (host.docker.internal:8443 via hostAliases -> Traefik on transit).
   otlp_address = "https://collector.${var.domain}:8443"

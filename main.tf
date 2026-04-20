@@ -53,10 +53,11 @@ module "transit_traefik" {
   traefik_hub_token = coalesce(var.transit_hub_token, var.traefik_hub_token)
 
   log_level                    = "INFO"
-  enable_otlp_access_logs      = false
-  enable_otlp_application_logs = false
+  enable_otlp_access_logs      = true
+  enable_otlp_application_logs = true
   enable_otlp_metrics          = true
   enable_otlp_traces           = true
+  otlp_service_name            = "traefik-transit"
   # OTel collector lives in traefik-observability namespace (release name
   # "opentelemetry" -> service "opentelemetry-opentelemetry-collector").
   otlp_address = "http://opentelemetry-opentelemetry-collector.${kubernetes_namespace_v1.transit_observability.metadata[0].name}.svc.cluster.local:4318"
